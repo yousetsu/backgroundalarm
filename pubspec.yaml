@@ -20,9 +20,8 @@ dev_dependencies:
   flutter_lints: ^2.0.0
   android_alarm_manager_plus: ^2.1.0
   flutter_ringtone_player: ^3.2.0
-  flutter_local_notifications: ^9.8.0+1
+  flutter_local_notifications: 12.0.4
   flutter_native_timezone: ^2.0.0
-  rxdart: ^0.27.3
 
 flutter:
   uses-material-design: true

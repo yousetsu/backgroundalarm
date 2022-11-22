@@ -10,8 +10,10 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 //MethodChannel
 import 'package:flutter/services.dart';
-//BehaviorSubject
-import 'package:rxdart/subjects.dart';
+
+//StreamController
+import 'dart:async';
+
 //ローカル通知の時間をセットするため
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -32,11 +34,11 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 FlutterLocalNotificationsPlugin();
 String? selectedNotificationPayload;
 
-final BehaviorSubject<ReceivedNotification> didReceiveLocalNotificationSubject =
-BehaviorSubject<ReceivedNotification>();
+final StreamController<ReceivedNotification> didReceiveLocalNotificationStream =
+StreamController<ReceivedNotification>.broadcast();
 
-final BehaviorSubject<String?> selectNotificationSubject =
-BehaviorSubject<String?>();
+final StreamController<String?> selectNotificationStream =
+StreamController<String?>.broadcast();
 const MethodChannel platform =
 MethodChannel('dexterx.dev/flutter_local_notifications_example');
 
@@ -52,6 +54,23 @@ class ReceivedNotification {
   final String? body;
   final String? payload;
 }
+
+/// ???A notification action which triggers a App navigation event
+const String navigationActionId = 'id_3';
+/// ????
+@pragma('vm:entry-point')
+void notificationTapBackground(NotificationResponse notificationResponse) {
+  // ignore: avoid_print
+  print('notification(${notificationResponse.id}) action tapped: '
+      '${notificationResponse.actionId} with'
+      ' payload: ${notificationResponse.payload}');
+  if (notificationResponse.input?.isNotEmpty ?? false) {
+    // ignore: avoid_print
+    print(
+        'notification action tapped with input: ${notificationResponse.input}');
+  }
+}
+
 Future<void> _configureLocalTimeZone() async {
   if (kIsWeb || Platform.isLinux) {
     return;
@@ -69,24 +88,32 @@ Future<void> main() async{
   await _configureLocalTimeZone();
 
   //通知のための初期化
-
   final NotificationAppLaunchDetails? notificationAppLaunchDetails = !kIsWeb &&
       Platform.isLinux
       ? null
       : await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
   if (notificationAppLaunchDetails?.didNotificationLaunchApp ?? false) {
-    selectedNotificationPayload = notificationAppLaunchDetails!.payload;
+    selectedNotificationPayload =
+        notificationAppLaunchDetails!.notificationResponse?.payload;
   }
   const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
   const InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
   await flutterLocalNotificationsPlugin.initialize(initializationSettings,
-      onSelectNotification: (String? payload) async {
-        if (payload != null) {
-          debugPrint('notification payload: $payload');
-        }
-        selectedNotificationPayload = payload;
-        selectNotificationSubject.add(payload);
-      });
+    onDidReceiveNotificationResponse:
+        (NotificationResponse notificationResponse) {
+      switch (notificationResponse.notificationResponseType) {
+        case NotificationResponseType.selectedNotification:
+          selectNotificationStream.add(notificationResponse.payload);
+          break;
+        case NotificationResponseType.selectedNotificationAction:
+          if (notificationResponse.actionId == navigationActionId) {
+            selectNotificationStream.add(notificationResponse.payload);
+          }
+          break;
+      }
+    },
+    onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+  );
 
   runApp(const MyApp());
 }
