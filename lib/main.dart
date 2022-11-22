@@ -6,22 +6,25 @@ import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 
 //時間になったらローカル通知を出すため
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-//音楽を慣らす
-import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
-//MethodChannel
+
+//ローカル通知で使うMethodChannelのため
 import 'package:flutter/services.dart';
 
-//StreamController
+//ローカル通知で使うStreamControllerのため
 import 'dart:async';
 
-//ローカル通知の時間をセットするため
+//音楽を慣らすため
+import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
+
+
+//ローカル通知の時間をセットするためタイムゾーンの定義が必要
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
-//kzWeb?
-import 'package:flutter/material.dart';
 
-//Linux?
+//kIsWebを使うため
+import 'package:flutter/material.dart';
+//Linuxを使うため
 import 'dart:io';
 
 //アラーム用のID
@@ -29,19 +32,13 @@ const int alarmID = 123456789;
 //鳴らしたい秒数
 const int alramSecond = 5;
 
-//通知のための初期化
+//ローカル通知のための準備
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 FlutterLocalNotificationsPlugin();
 String? selectedNotificationPayload;
-
-final StreamController<ReceivedNotification> didReceiveLocalNotificationStream =
-StreamController<ReceivedNotification>.broadcast();
-
-final StreamController<String?> selectNotificationStream =
-StreamController<String?>.broadcast();
-const MethodChannel platform =
-MethodChannel('dexterx.dev/flutter_local_notifications_example');
-
+final StreamController<ReceivedNotification> didReceiveLocalNotificationStream = StreamController<ReceivedNotification>.broadcast();
+final StreamController<String?> selectNotificationStream = StreamController<String?>.broadcast();
+const MethodChannel platform = MethodChannel('dexterx.dev/flutter_local_notifications_example');
 class ReceivedNotification {
   ReceivedNotification({
     required this.id,
@@ -54,10 +51,7 @@ class ReceivedNotification {
   final String? body;
   final String? payload;
 }
-
-/// ???A notification action which triggers a App navigation event
 const String navigationActionId = 'id_3';
-/// ????
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse notificationResponse) {
   // ignore: avoid_print
@@ -70,7 +64,7 @@ void notificationTapBackground(NotificationResponse notificationResponse) {
         'notification action tapped with input: ${notificationResponse.input}');
   }
 }
-
+//タイムゾーン初期化
 Future<void> _configureLocalTimeZone() async {
   if (kIsWeb || Platform.isLinux) {
     return;
@@ -202,13 +196,13 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed:() async {
                 setBackgroundAlarm();
               },
-              child: const Text("5秒後に音楽再生"),
+              child: const Text("5秒後にサウンド再生"),
             ),
             ElevatedButton(
               onPressed:() async {
                 stopBackgroundArlam();
               },
-              child: const Text("音楽停止"),
+              child: const Text("サウンド停止"),
             ),
           ],
         ),
